@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build": "vite build --base=/assets/hr_bh/payroll-inst/"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
+    "@types/node": "^22.15.3",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react-swc": "^3.8.0",

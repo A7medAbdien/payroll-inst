@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 // API utility file that provides a similar pattern to frappe-ui's createResource
 
 interface ResourceOptions {
@@ -21,30 +23,28 @@ export interface Resource<T = any> {
 }
 
 export function createResource<T = any>(options: ResourceOptions): Resource<T> {
-  // Default state
-  let state = {
-    data: null as T | null,
-    loading: false,
-    error: null as Error | null,
-  };
+  // Create state with React's useState
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<Error | null>(null);
 
   // Method to fetch data from the API
   const fetch = async (): Promise<T> => {
-    state.loading = true;
-    state.error = null;
+    setLoading(true);
+    setError(null);
 
     try {
       const params = options.makeParams ? options.makeParams() : options.params;
 
-      const data = await window.frappe.request({
+      const responseData = await window.frappe.request({
         url: options.url,
-        method: options.method,
+        method: options.method || 'GET',
         params,
         onError: options.onError,
       });
 
-      const transformedData = options.transform ? options.transform(data) : data;
-      state.data = transformedData;
+      const transformedData = options.transform ? options.transform(responseData) : responseData;
+      setData(transformedData);
 
       if (options.onSuccess) {
         options.onSuccess(transformedData);
@@ -52,17 +52,17 @@ export function createResource<T = any>(options: ResourceOptions): Resource<T> {
 
       return transformedData;
     } catch (error) {
-      state.error = error as Error;
+      setError(error as Error);
       throw error;
     } finally {
-      state.loading = false;
+      setLoading(false);
     }
   };
 
   // Method to submit data to the API
   const submit = async (params?: Record<string, any>): Promise<T> => {
-    state.loading = true;
-    state.error = null;
+    setLoading(true);
+    setError(null);
 
     try {
       const combinedParams = {
@@ -70,15 +70,15 @@ export function createResource<T = any>(options: ResourceOptions): Resource<T> {
         ...(params || {})
       };
 
-      const data = await window.frappe.request({
+      const responseData = await window.frappe.request({
         url: options.url,
         method: options.method || 'POST',
         params: combinedParams,
         onError: options.onError,
       });
 
-      const transformedData = options.transform ? options.transform(data) : data;
-      state.data = transformedData;
+      const transformedData = options.transform ? options.transform(responseData) : responseData;
+      setData(transformedData);
 
       if (options.onSuccess) {
         options.onSuccess(transformedData);
@@ -86,32 +86,31 @@ export function createResource<T = any>(options: ResourceOptions): Resource<T> {
 
       return transformedData;
     } catch (error) {
-      state.error = error as Error;
+      setError(error as Error);
       throw error;
     } finally {
-      state.loading = false;
+      setLoading(false);
     }
   };
 
+  // Auto-fetch if enabled
+  useEffect(() => {
+    if (options.auto) {
+      fetch().catch(() => {
+        // Errors are already handled in fetch
+      });
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
   // Create the resource object
   const resource: Resource<T> = {
-    get data() { return state.data; },
-    get loading() { return state.loading; },
-    get error() { return state.error; },
+    data,
+    loading,
+    error,
     fetch,
     reload: fetch,
     submit,
   };
-
-  // Auto-fetch if enabled
-  if (options.auto) {
-    // Use setTimeout to ensure this runs after the component mounts
-    setTimeout(() => {
-      fetch().catch(() => {
-        // Errors are already handled in fetch
-      });
-    }, 0);
-  }
 
   return resource;
 }
@@ -155,6 +154,7 @@ export function createDocumentResource<T = any>(options: ResourceOptions & {
 } {
   const { doctype, name, setValue, ...rest } = options;
 
+  // Create the base resource using our updated createResource function
   const resource = createResource<T>({
     ...rest,
     url: 'frappe.client.get',
@@ -165,6 +165,7 @@ export function createDocumentResource<T = any>(options: ResourceOptions & {
     }),
   });
 
+  // Add the setValue method
   const setValueFn = async (data: Partial<T>): Promise<T> => {
     const result = await window.frappe.request({
       url: 'frappe.client.set_value',

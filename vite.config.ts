@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react-swc'
 import fs from 'fs'
 import path from 'path'
@@ -10,7 +11,10 @@ const logoService = {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
   server: {
     port: 8082,
     proxy: getProxyOptions(),
@@ -38,7 +42,7 @@ function getProxyOptions() {
     "^/(app|login|api|assets|files|private)": {
       target: `http://127.0.0.1:${webserver_port}`,
       ws: true,
-      router: function (req: any) {
+      router: function(req: any) {
         const site_name = req.headers.host.split(":")[0];
         console.log(`Proxying ${req.url} to ${site_name}:${webserver_port}`);
         return `http://${site_name}:${webserver_port}`;

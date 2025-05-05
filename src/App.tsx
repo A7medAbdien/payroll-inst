@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { createResource } from './utils/api'
 import { User } from './types'
@@ -10,21 +10,19 @@ function App() {
   const [activePage, setActivePage] = useState<string>('dashboard');
   const [user, setUser] = useState<User | null>(null);
 
-  const [userResource] = useState(() =>
-    createResource<User>({
-      url: 'hr_bh.api.get_current_user_info',
-      auto: true,
-      onSuccess: (data) => {
-        setUser(data);
-      },
-      onError: (err) => {
-        // Redirect to login if authentication failed
-        if (err.message?.includes('not authenticated')) {
-          window.location.href = "/login?redirect-to=%2Fhr_bh%2Fpayroll";
-        }
+  const userResource = createResource<User>({
+    url: 'hr_bh.api.get_current_user_info',
+    auto: true,
+    onSuccess: (data) => {
+      setUser(data);
+    },
+    onError: (err) => {
+      // Redirect to login if authentication failed
+      if (err.message?.includes('not authenticated')) {
+        window.location.href = "/login?redirect-to=%2Fhr_bh%2Fpayroll";
       }
-    })
-  );
+    }
+  });
 
   const handleLogout = () => {
     window.frappe.call('logout').then(() => {

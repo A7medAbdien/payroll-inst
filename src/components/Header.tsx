@@ -7,10 +7,18 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
+  // Check if we're in development mode
+  const isDevelopment = import.meta.env.DEV;
+
   return (
     <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
       <div className="flex items-center">
         <h1 className="text-xl font-bold text-gray-800">Payroll Institute</h1>
+        {isDevelopment && (
+          <div className="ml-4 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-md">
+            DEV MODE - Using Mock Data
+          </div>
+        )}
       </div>
       <div className="flex items-center space-x-4">
         <div className="text-sm text-gray-600">

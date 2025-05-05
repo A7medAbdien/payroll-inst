@@ -1,45 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { createResource } from '../utils/api';
 import { SalaryStructure, Employee } from '../types';
 
 const Dashboard: React.FC = () => {
-  const [salaryStructures, setSalaryStructures] = useState<SalaryStructure[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch data when component mounts
-    const fetchSalaryStructures = createResource<SalaryStructure[]>({
-      url: 'hr_bh.api.payroll_inst.get_salary_structures',
-      auto: true,
-      onSuccess: (data) => {
-        setSalaryStructures(data);
-      },
-      onError: (err) => {
-        setError(`Error loading salary structures: ${err.message}`);
-      }
-    });
+  // Use the fixed createResource function for salary structures
+  const salaryStructuresResource = createResource<SalaryStructure[]>({
+    url: 'hr_bh.api.payroll_inst.get_salary_structures',
+    auto: true,
+    onError: (err) => {
+      setError(`Error loading salary structures: ${err.message}`);
+    }
+  });
 
-    const fetchEmployees = createResource<Employee[]>({
-      url: 'hr_bh.api.payroll_inst.get_employees_for_payroll',
-      auto: true,
-      onSuccess: (data) => {
-        setEmployees(data);
-        setLoading(false);
-      },
-      onError: (err) => {
-        setError(`Error loading employees: ${err.message}`);
-        setLoading(false);
-      }
-    });
+  // Use the fixed createResource function for employees
+  const employeesResource = createResource<Employee[]>({
+    url: 'hr_bh.api.payroll_inst.get_employees_for_payroll',
+    auto: true,
+    onError: (err) => {
+      setError(`Error loading employees: ${err.message}`);
+    }
+  });
 
-    return () => {
-      // Cleanup if needed
-    };
-  }, []);
+  // Show loading state if either resource is still loading
+  const isLoading = salaryStructuresResource.loading || employeesResource.loading;
 
-  if (loading) return <div className="flex justify-center p-8">Loading payroll data...</div>;
+  // Get data from resources
+  const salaryStructures = salaryStructuresResource.data || [];
+  const employees = employeesResource.data || [];
+
+  if (isLoading) return <div className="flex justify-center p-8">Loading payroll data...</div>;
   if (error) return <div className="bg-red-100 p-4 rounded text-red-700">{error}</div>;
 
   return (

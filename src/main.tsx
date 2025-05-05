@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { mockRequest } from './utils/mockApi'
 
 // Setup global frappe utilities
 declare global {
@@ -24,10 +25,19 @@ interface RequestOptions {
   onError?: (error: any) => void;
 }
 
+// Determine if we're in development mode
+const isDevelopment = import.meta.env.DEV;
+
 // Create a request function similar to frappe-ui
 const request = (options: RequestOptions) => {
   if (!options.url) {
     throw new Error('[request] options.url is required');
+  }
+
+  // Use mock API for development mode
+  if (isDevelopment) {
+    console.log('Using mock API in development mode');
+    return mockRequest(options);
   }
 
   // Transform request

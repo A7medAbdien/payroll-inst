@@ -1,3 +1,8 @@
+---
+description:
+globs:
+alwaysApply: false
+---
 # ERPNext Payroll Preparation Wizard - Revised Implementation Guide
 
 ## Core Objectives

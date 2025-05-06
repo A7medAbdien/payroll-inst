@@ -1,51 +1,77 @@
 import React from 'react';
+import { useWizardStore, WizardStep } from '@/store/useWizardStore';
 
 interface SidebarProps {
-  activePage: string;
-  setActivePage: (page: string) => void;
+  steps: WizardStep[];
+  currentStep: string;
 }
 
-interface NavItem {
-  id: string;
-  label: string;
-  icon: string;
-}
+const Sidebar: React.FC<SidebarProps> = ({ steps, currentStep }) => {
+  const setCurrentStep = useWizardStore(state => state.setCurrentStep);
 
-const Sidebar: React.FC<SidebarProps> = ({ activePage, setActivePage }) => {
-  const navItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'grid' },
-    { id: 'salary-structures', label: 'Salary Structures', icon: 'dollar-sign' },
-    { id: 'employees', label: 'Employees', icon: 'users' },
-    { id: 'payroll-entries', label: 'Payroll Entries', icon: 'file-text' },
-    { id: 'salary-slips', label: 'Salary Slips', icon: 'file' },
-    { id: 'reports', label: 'Reports', icon: 'bar-chart-2' },
-    { id: 'settings', label: 'Settings', icon: 'settings' },
-  ];
+  // Icons mapping for each step
+  const getIconForStep = (stepId: string) => {
+    switch (stepId) {
+      case 'salary-components':
+        return 'list';
+      case 'salary-structure':
+        return 'file-text';
+      case 'salary-assignment':
+        return 'users';
+      case 'payroll-entry':
+        return 'calendar';
+      default:
+        return 'check-circle';
+    }
+  };
+
+  // Status colors
+  const getStatusColor = (status: WizardStep['status']) => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-500';
+      case 'in-progress':
+        return 'text-blue-500';
+      case 'error':
+        return 'text-red-500';
+      default:
+        return 'text-gray-400';
+    }
+  };
 
   return (
-    <aside className="w-64 bg-gray-800 text-white h-full fixed left-0 top-0 pt-16">
+    <aside className="w-64 bg-[#383838] text-white h-full fixed left-0 top-0 pt-16">
       <div className="py-4 overflow-y-auto">
-        <ul className="space-y-2 px-3">
-          {navItems.map((item) => (
-            <li key={item.id}>
+        <h2 className="text-lg font-semibold px-6 mb-4">Payroll Preparation</h2>
+
+        <ul className="space-y-1">
+          {steps.sort((a, b) => a.order - b.order).map((step) => (
+            <li key={step.id}>
               <button
-                onClick={() => setActivePage(item.id)}
-                className={`flex items-center w-full p-2 text-base rounded-lg ${
-                  activePage === item.id
-                    ? 'bg-gray-700 text-white'
-                    : 'text-gray-300 hover:bg-gray-700'
+                onClick={() => setCurrentStep(step.id)}
+                className={`flex items-center w-full p-3 text-base rounded-lg ${
+                  currentStep === step.id
+                    ? 'bg-[#4A4A4A] text-white'
+                    : 'text-gray-300 hover:bg-[#4A4A4A]'
                 }`}
               >
-                <svg
-                  className="w-5 h-5 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <use href={`/assets/hr_bh/payroll-inst/feather-sprite.svg#${item.icon}`} />
-                </svg>
-                <span>{item.label}</span>
+                <div className={`flex items-center justify-center w-8 h-8 mr-3 rounded-full ${
+                  currentStep === step.id ? 'bg-[#007ACC] text-white' : 'bg-gray-700'
+                }`}>
+                  {step.status === 'completed' ? (
+                    <span className="text-green-500">✓</span>
+                  ) : (
+                    <span>{step.order}</span>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">{step.title}</span>
+                  <span className={`text-xs ${getStatusColor(step.status)}`}>
+                    {step.status === 'completed' ? 'Completed' :
+                     step.status === 'in-progress' ? 'In Progress' :
+                     step.status === 'error' ? 'Needs Attention' : 'Pending'}
+                  </span>
+                </div>
               </button>
             </li>
           ))}

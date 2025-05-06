@@ -1,58 +1,112 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import './App.css'
-import { createResource } from './utils/api'
-import { User } from './types'
-import Header from './components/Header'
-import Sidebar from './components/Sidebar'
-import Dashboard from './components/Dashboard'
+import { useUserStore } from '@/store/useUserStore'
+import { useWizardStore } from '@/store/useWizardStore'
+import { useDashboardStore } from '@/store/useDashboardStore'
+import Header from '@/components/Header'
+import Sidebar from '@/components/Sidebar'
+import StatusDashboard from '@/components/StatusDashboard'
+import SalaryComponentsStep from '@/components/steps/SalaryComponentsStep'
+import SalaryStructureStep from '@/components/steps/SalaryStructureStep'
+import SalaryAssignmentStep from '@/components/steps/SalaryAssignmentStep'
+import PayrollEntryStep from '@/components/steps/PayrollEntryStep'
+import ActionBar from '@/components/ActionBar'
 
 function App() {
-  const [activePage, setActivePage] = useState<string>('dashboard');
-  const [user, setUser] = useState<User | null>(null);
+  const { user, loading: userLoading, error: userError, fetchUser } = useUserStore()
+  const { metrics, fetchMetrics } = useDashboardStore()
+  const { currentStep, steps } = useWizardStore()
 
-  const userResource = createResource<User>({
-    url: 'hr_bh.api.get_current_user_info',
-    auto: true,
-    onSuccess: (data) => {
-      setUser(data);
-    },
-    onError: (err) => {
-      // Redirect to login if authentication failed
-      if (err.message?.includes('not authenticated')) {
-        window.location.href = "/login?redirect-to=%2Fhr_bh%2Fpayroll";
-      }
-    }
-  });
+  useEffect(() => {
+    // Fetch user info when component mounts
+    fetchUser()
 
-  const handleLogout = () => {
-    window.frappe.call('logout').then(() => {
-      window.location.href = "/login";
-    });
-  };
+    // Fetch dashboard metrics
+    fetchMetrics()
+  }, [fetchUser, fetchMetrics])
 
-  const renderContent = () => {
-    switch (activePage) {
-      case 'dashboard':
-        return <Dashboard />;
-      // Other pages can be added here
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'salary-components':
+        return <SalaryComponentsStep />
+      case 'salary-structure':
+        return <SalaryStructureStep />
+      case 'salary-assignment':
+        return <SalaryAssignmentStep />
+      case 'payroll-entry':
+        return <PayrollEntryStep />
       default:
-        return <Dashboard />;
+        return <SalaryComponentsStep />
     }
-  };
+  }
 
-  if (userResource.loading) return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  if (userResource.error) return <div className="flex items-center justify-center h-screen bg-red-50 text-red-700 p-4">Error: {userResource.error.message}</div>;
-  if (!user) return <div className="flex items-center justify-center h-screen">User not found</div>;
+  // Loading state
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
+  // Error state
+  if (userError) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-red-50">
+        <div className="text-lg text-red-600 p-4">
+          Error: {userError.message}
+        </div>
+      </div>
+    )
+  }
+
+  // User not found state
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-yellow-50">
+        <div className="text-lg text-yellow-700 p-4">
+          User not found. Please log in.
+          <button
+            className="ml-4 px-4 py-2 bg-blue-500 text-white rounded"
+            onClick={() => window.location.href = "/login"}
+          >
+            Login
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <Header user={user} onLogout={handleLogout} />
+    <div className="flex flex-col min-h-screen bg-[#F5F1EA]">
+      <Header
+        user={user}
+        onLogout={() => {
+          // TODO: Implement logout functionality
+          // window.frappe.call('logout').then(() => {
+          //   window.location.href = "/login";
+          // });
+          console.log("Logout clicked")
+        }}
+      />
 
       <div className="flex flex-1">
-        <Sidebar activePage={activePage} setActivePage={setActivePage} />
+        <Sidebar
+          steps={steps}
+          currentStep={currentStep}
+        />
 
-        <main className="ml-64 flex-1 p-4">
-          {renderContent()}
+        <main className="ml-64 flex-1 p-6 flex flex-col">
+          <StatusDashboard metrics={metrics} />
+
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-4 flex-1">
+            {renderStepContent()}
+          </div>
+
+          <ActionBar
+            currentStep={currentStep}
+            steps={steps}
+          />
         </main>
       </div>
     </div>
